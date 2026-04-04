@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -9,13 +9,15 @@ from langchain.tools import tool
 from typing import Dict, Any
 from tavily import TavilyClient
 from langgraph.checkpoint.memory import InMemorySaver
+import mimetypes
 
 load_dotenv()
 
 API_KEY = os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
 
-model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=API_KEY)
+client = genai.Client(api_key=API_KEY)
+
 tavily_client = TavilyClient()
 
 # Building a web-search tool
@@ -29,21 +31,44 @@ agent = create_agent(
     # tools=[web_search]
     checkpointer=InMemorySaver()
 )
-# get agent respon
+# get agent response
 def get_response(prompt, thread_id):
     config = {"configurable": {"thread_id": thread_id}}
-    question = HumanMessage(content=prompt)
+    content = [{"type":"text", "text":prompt.text}]
+
+    for file in prompt.files:
+        mime_type = file.type or mimetypes.guess_type(file.name)[0] or "application/octet-stream"
+        #multipurpose internet mail extension
+
+        google_file = client.files.upload(file=file, 
+                                          config={'mime_type':mime_type, 
+                                                  'display_name': file.name})
+
+        content.append({
+            "type":"media",
+            "file_uri":google_file.uri,
+            "mime_type":mime_type
+        })
+
+    question = HumanMessage(content=content)
+
     stream = agent.stream(
         {"messages": [question]},
         config,
         stream_mode="messages"
     )
 
+    has_output = False
+
     for chunk, metadata in stream:
+        has_output = True
         if chunk.content:
             for word in chunk.content.split():
                 yield word + " "
                 time.sleep(0.05)
+
+    if not has_output:
+        yield ""
 
 # get chat history
 def get_history(thread_id):

@@ -40,15 +40,32 @@ for message in history:
     with st.chat_message(role):  #display the messages along with role
         st.markdown(message.content)
 
-if prompt := st.chat_input("What's up?"):
-    with st.chat_message("user"):
-        st.markdown(prompt)
+if prompt := st.chat_input(
+    "What's up?",
+    accept_file="multiple",
+    ):
+
+    user_prompt = prompt.text
+    uploaded_files = prompt.files
+
+    if user_prompt:   
+        with st.chat_message("user"):
+            st.markdown(user_prompt)
+    
+    if uploaded_files:
+        for file in uploaded_files:
+            if file.type.startswith("image/"):
+                st.image(file, caption=file.name)
+            else:
+                st.info(f"Attached files : {file.name}")
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             response_stream = get_response(prompt, thread_id=st.session_state.current_chat)
-            response = st.write_stream(response_stream)
-            # response = get_response(prompt=prompt)
+            try:
+                response = st.write_stream(response_stream)
+            except ValueError:
+                st.write("Ok")
 
             #NO APPEND NEEDED HERE
             # if response:
