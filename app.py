@@ -20,15 +20,15 @@ with st.sidebar:
     st.title("My Chats")
 
     if st.button("+ New Chat"):
-        new_name = f"Chat {len(st.session_state.chats) + 1}"
+        new_name = f"Chat {len(st.session_state.chat_names) + 1}"
         st.session_state.chat_names.append(new_name)
         st.session_state.current_chat = new_name   
         st.rerun() 
 
     chat_selection = st.radio(
         "Select Convo",
-        options=list(st.session_state.chats.keys()),
-        index=list(st.session_state.chats.keys()).index(st.session_state.current_chat)
+        options=st.session_state.chat_names,
+        index=st.session_state.chat_names.index(st.session_state.current_chat)
     )
     st.session_state.current_chat = chat_selection
 

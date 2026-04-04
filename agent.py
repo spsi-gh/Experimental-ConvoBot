@@ -29,7 +29,7 @@ agent = create_agent(
     # tools=[web_search]
     checkpointer=InMemorySaver()
 )
-# get agent response
+# get agent respon
 def get_response(prompt, thread_id):
     config = {"configurable": {"thread_id": thread_id}}
     question = HumanMessage(content=prompt)
